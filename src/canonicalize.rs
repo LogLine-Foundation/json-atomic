@@ -46,7 +46,7 @@ use unicode_normalization::UnicodeNormalization;
 /// // Mesmo valor sempre produz os mesmos bytes
 /// let canonical2 = canonize(&note)?;
 /// assert_eq!(canonical, canonical2);
-/// # Ok::<(), json_atomic::CanonicalError>(())
+/// # Ok::<(), json_atomic::errors::CanonicalError>(())
 /// ```
 pub fn canonize<T: Serialize>(value: &T) -> Result<Vec<u8>, CanonicalError> {
     let v = serde_json::to_value(value).map_err(|e| CanonicalError::Serde(e.to_string()))?;

@@ -29,8 +29,7 @@ use crate::{
 ///
 /// ```rust
 /// use ed25519_dalek::SigningKey;
-/// use json_atomic::seal_value;
-/// use rand::rngs::OsRng;
+/// use json_atomic::{seal_value, errors::SealError};
 /// use serde::Serialize;
 ///
 /// #[derive(Serialize)]
@@ -39,7 +38,8 @@ use crate::{
 ///     timestamp: u64,
 /// }
 ///
-/// let sk = SigningKey::generate(&mut OsRng);
+/// // Chave de exemplo (em produção, derive de seed/keystore)
+/// let sk = SigningKey::from_bytes(&[0u8; 32]);
 /// let fact = Fact {
 ///     message: "Hello, World!".into(),
 ///     timestamp: 1735671234,
@@ -47,7 +47,7 @@ use crate::{
 ///
 /// let signed = seal_value(&fact, &sk)?;
 /// println!("CID: {}", signed.cid_hex());
-/// # Ok::<(), json_atomic::SealError>(())
+/// # Ok::<(), SealError>(())
 /// ```
 pub fn seal_value<T: serde::Serialize>(
     value: &T,
@@ -88,8 +88,7 @@ pub fn seal_value<T: serde::Serialize>(
 ///
 /// ```rust
 /// use ed25519_dalek::SigningKey;
-/// use json_atomic::{seal_value, verify_seal};
-/// use rand::rngs::OsRng;
+/// use json_atomic::{seal_value, verify_seal, errors::SealError};
 /// use serde::Serialize;
 ///
 /// #[derive(Serialize)]
@@ -97,12 +96,13 @@ pub fn seal_value<T: serde::Serialize>(
 ///     data: String,
 /// }
 ///
-/// let sk = SigningKey::generate(&mut OsRng);
+/// // Chave de exemplo (em produção, derive de seed/keystore)
+/// let sk = SigningKey::from_bytes(&[0u8; 32]);
 /// let fact = Fact { data: "test".into() };
 ///
 /// let signed = seal_value(&fact, &sk)?;
 /// verify_seal(&signed)?; // Verifica integridade e autenticidade
-/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// # Ok::<(), SealError>(())
 /// ```
 pub fn verify_seal(f: &SignedFact) -> Result<(), VerifyError> {
     // Recalcula CID do canonical e compara
@@ -124,11 +124,11 @@ pub fn verify_seal(f: &SignedFact) -> Result<(), VerifyError> {
 ///
 /// ```rust
 /// use ed25519_dalek::SigningKey;
-/// use json_atomic::seal_logline;
+/// use json_atomic::{seal_logline, errors::SealError};
 /// use logline_core::*;
-/// use rand::rngs::OsRng;
 ///
-/// let sk = SigningKey::generate(&mut OsRng);
+/// // Chave de exemplo (em produção, derive de seed/keystore)
+/// let sk = SigningKey::from_bytes(&[0u8; 32]);
 /// let line = LogLine::builder()
 ///     .who("did:ubl:alice")
 ///     .did(Verb::Approve)
@@ -140,7 +140,7 @@ pub fn verify_seal(f: &SignedFact) -> Result<(), VerifyError> {
 ///
 /// let signed = seal_logline(&line, &sk)?;
 /// println!("LogLine CID: {}", signed.cid_hex());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// # Ok::<(), SealError>(())
 /// ```
 pub fn seal_logline(line: &LogLine, sk: &SigningKey) -> Result<SignedFact, SealError> {
     // Reaproveita `serde` derivado do logline-core

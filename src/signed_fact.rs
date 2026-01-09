@@ -25,14 +25,14 @@ use hex::ToHex;
 ///
 /// ```rust
 /// use ed25519_dalek::SigningKey;
-/// use json_atomic::{seal_value, verify_seal};
-/// use rand::rngs::OsRng;
+/// use json_atomic::{seal_value, verify_seal, errors::SealError};
 /// use serde::Serialize;
 ///
 /// #[derive(Serialize)]
 /// struct Data { value: u64 }
 ///
-/// let sk = SigningKey::generate(&mut OsRng);
+/// // Chave de exemplo (em produção, derive de seed/keystore)
+/// let sk = SigningKey::from_bytes(&[0u8; 32]);
 /// let signed = seal_value(&Data { value: 42 }, &sk)?;
 ///
 /// // Verifica integridade e autenticidade
@@ -40,7 +40,7 @@ use hex::ToHex;
 ///
 /// // Acessa o CID em hexadecimal
 /// println!("CID: {}", signed.cid_hex());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// # Ok::<(), SealError>(())
 /// ```
 #[derive(Clone, Debug)]
 pub struct SignedFact {
