@@ -1,6 +1,6 @@
 [package]
 name = "json_atomic"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "The Cryptographic Atom — JSON✯Atomic: canonicalization + BLAKE3 content addressing + DV25-Seal (Ed25519) for Signed Facts"
 license = "MIT"
