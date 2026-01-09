@@ -16,3 +16,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# GitHub App Private Keys (protegidos na codebase)
+*.pem
+*.key
+!*.key.example
+private*.pem
+app*.pem
