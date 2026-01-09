@@ -9,12 +9,45 @@ use crate::errors::CanonicalError;
 use unicode_normalization::UnicodeNormalization;
 
 /// Canoniza qualquer `Serialize` em bytes determinísticos JSON-compatíveis.
-/// Regras (Paper II):
-/// - Objetos: chaves ordenadas lexicograficamente
-/// - Strings: NFC
-/// - Números: apenas inteiros em forma mínima
-/// - Literais: true/false/null em minúsculas (padrão JSON)
-/// - Sem whitespace estrutural extra
+///
+/// Converte um valor serializável em bytes canônicos seguindo as regras do Paper II:
+/// - **Objetos**: chaves ordenadas lexicograficamente
+/// - **Strings**: normalização Unicode NFC (quando `feature = "unicode"`)
+/// - **Números**: apenas inteiros em forma mínima (floats são rejeitados)
+/// - **Literais**: `true`/`false`/`null` em minúsculas (padrão JSON)
+/// - **Sem whitespace estrutural extra**
+///
+/// O resultado garante que valores semanticamente equivalentes produzem exatamente
+/// os mesmos bytes, permitindo hashing determinístico e assinaturas verificáveis.
+///
+/// # Erros
+///
+/// - `CanonicalError::FloatNotAllowed` se o valor contiver números de ponto flutuante
+/// - `CanonicalError::Serde` se a serialização falhar
+///
+/// # Exemplo
+///
+/// ```rust
+/// use json_atomic::canonize;
+/// use serde::Serialize;
+///
+/// #[derive(Serialize)]
+/// struct Note {
+///     title: String,
+///     done: bool,
+/// }
+///
+/// let note = Note {
+///     title: "Hello".into(),
+///     done: false,
+/// };
+///
+/// let canonical = canonize(&note)?;
+/// // Mesmo valor sempre produz os mesmos bytes
+/// let canonical2 = canonize(&note)?;
+/// assert_eq!(canonical, canonical2);
+/// # Ok::<(), json_atomic::CanonicalError>(())
+/// ```
 pub fn canonize<T: Serialize>(value: &T) -> Result<Vec<u8>, CanonicalError> {
     let v = serde_json::to_value(value).map_err(|e| CanonicalError::Serde(e.to_string()))?;
     let mut out = Vec::with_capacity(256);

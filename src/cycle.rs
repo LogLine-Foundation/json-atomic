@@ -11,6 +11,44 @@ use crate::{
     SignedFact,
 };
 
+/// Sela um valor serializável como Signed Fact (Paper II: Cycle of Truth).
+///
+/// Executa o ciclo completo: `canonize → blake3 → ed25519`:
+/// 1. Canoniza o valor em bytes determinísticos
+/// 2. Calcula o CID (BLAKE3 hash dos bytes canônicos)
+/// 3. Assina o CID com Ed25519
+///
+/// O resultado é um `SignedFact` imutável que pode ser verificado por qualquer pessoa
+/// que tenha acesso ao fato, sem necessidade de confiar em terceiros.
+///
+/// # Erros
+///
+/// - `SealError::Canonical` se a canonicalização falhar
+///
+/// # Exemplo
+///
+/// ```rust
+/// use ed25519_dalek::SigningKey;
+/// use json_atomic::seal_value;
+/// use rand::rngs::OsRng;
+/// use serde::Serialize;
+///
+/// #[derive(Serialize)]
+/// struct Fact {
+///     message: String,
+///     timestamp: u64,
+/// }
+///
+/// let sk = SigningKey::generate(&mut OsRng);
+/// let fact = Fact {
+///     message: "Hello, World!".into(),
+///     timestamp: 1735671234,
+/// };
+///
+/// let signed = seal_value(&fact, &sk)?;
+/// println!("CID: {}", signed.cid_hex());
+/// # Ok::<(), json_atomic::SealError>(())
+/// ```
 pub fn seal_value<T: serde::Serialize>(
     value: &T,
     sk: &SigningKey,
@@ -32,6 +70,40 @@ pub fn seal_value<T: serde::Serialize>(
     })
 }
 
+/// Verifica a integridade e autenticidade de um Signed Fact.
+///
+/// Valida que:
+/// 1. O CID corresponde aos bytes canônicos (recalcula BLAKE3)
+/// 2. A assinatura Ed25519 é válida para o CID e a chave pública
+///
+/// Retorna `Ok(())` se o fato estiver íntegro e autenticado, ou um erro
+/// se houver qualquer problema de integridade ou assinatura.
+///
+/// # Erros
+///
+/// - `VerifyError::CanonicalMismatch` se o CID recalculado não corresponder
+/// - `VerifyError::BadSignature` se a assinatura for inválida
+///
+/// # Exemplo
+///
+/// ```rust
+/// use ed25519_dalek::SigningKey;
+/// use json_atomic::{seal_value, verify_seal};
+/// use rand::rngs::OsRng;
+/// use serde::Serialize;
+///
+/// #[derive(Serialize)]
+/// struct Fact {
+///     data: String,
+/// }
+///
+/// let sk = SigningKey::generate(&mut OsRng);
+/// let fact = Fact { data: "test".into() };
+///
+/// let signed = seal_value(&fact, &sk)?;
+/// verify_seal(&signed)?; // Verifica integridade e autenticidade
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn verify_seal(f: &SignedFact) -> Result<(), VerifyError> {
     // Recalcula CID do canonical e compara
     let recomputed = blake3::hash(&f.canonical);
@@ -43,7 +115,33 @@ pub fn verify_seal(f: &SignedFact) -> Result<(), VerifyError> {
         .map_err(|_| VerifyError::BadSignature)
 }
 
-/// Sela um LogLine completo como Signed Fact (Paper II: Signed Fact de ação verificada)
+/// Sela um LogLine completo como Signed Fact (Paper II: Signed Fact de ação verificada).
+///
+/// Conveniência para selar um `LogLine` do `logline-core` diretamente.
+/// Equivalente a `seal_value(line, sk)`, mas com tipo específico para LogLine.
+///
+/// # Exemplo
+///
+/// ```rust
+/// use ed25519_dalek::SigningKey;
+/// use json_atomic::seal_logline;
+/// use logline_core::*;
+/// use rand::rngs::OsRng;
+///
+/// let sk = SigningKey::generate(&mut OsRng);
+/// let line = LogLine::builder()
+///     .who("did:ubl:alice")
+///     .did(Verb::Approve)
+///     .when(1735671234)
+///     .if_ok(Outcome { label: "ok".into(), effects: vec![] })
+///     .if_doubt(Escalation { label: "doubt".into(), route_to: "auditor".into() })
+///     .if_not(FailureHandling { label: "not".into(), action: "notify".into() })
+///     .build_draft()?;
+///
+/// let signed = seal_logline(&line, &sk)?;
+/// println!("LogLine CID: {}", signed.cid_hex());
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn seal_logline(line: &LogLine, sk: &SigningKey) -> Result<SignedFact, SealError> {
     // Reaproveita `serde` derivado do logline-core
     seal_value(line, sk)

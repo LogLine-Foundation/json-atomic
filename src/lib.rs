@@ -2,6 +2,12 @@
 //!
 //! The Cryptographic Atom — JSON✯Atomic: canonicalization + BLAKE3 + DV25-Seal (Ed25519)
 //!
+//! This crate implements the **Cryptographic Atom** from Paper II, providing:
+//! - **Canonical JSON✯Atomic** serialization (Same Semantics = Same Bytes = Same Hash)
+//! - **BLAKE3** content addressing (CID)
+//! - **DV25-Seal (Ed25519)** for Signed Facts
+//! - **Trajectory Matching** for similarity calculations
+//!
 //! See [README.md](https://github.com/LogLine-Foundation/json_atomic/blob/main/README.md) for full documentation.
 
 #![forbid(unsafe_code)]
