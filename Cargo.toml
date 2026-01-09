@@ -10,7 +10,7 @@ keywords = ["canonicalization", "cryptography", "signed-fact", "zero-trust", "ve
 categories = ["cryptography", "encoding"]
 resolver = "2"
 documentation = "https://docs.rs/json_atomic"
-homepage = "https://logline.world"
+homepage = "https://logline.foundation"
 rust-version = "1.75"
 exclude = ["docs/**", ".github/**", "CITATION.cff", "CHANGELOG.md"]
 
